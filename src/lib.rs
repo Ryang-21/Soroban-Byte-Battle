@@ -11,25 +11,31 @@ mod auth;
 pub mod token {
     soroban_sdk::contractimport!(file = "token/soroban_token_spec.wasm");
 }
+
 #[derive(Clone)]
 #[contracttype]
 pub enum DataKey {
     Nonce(Identifier),
     Token,
 }
+
 pub struct ByteBattle;
 
 pub trait ByteBattleTraits {
     fn initialize(e: Env, token_address: BytesN<32>);
+
     fn battle(
         e: Env,
         player1_sig: Signature,
         player2_sig: Signature,
         amount: BigInt,
     ) -> (Bytes, Bytes, u32, u32);
+
     fn nonce(e: Env, user: Identifier) -> i64;
+
     fn token(e: Env) -> BytesN<32>;
 }
+
 #[contractimpl]
 impl ByteBattleTraits for ByteBattle {
     fn initialize(e: Env, token_address: BytesN<32>) {
@@ -66,20 +72,6 @@ impl ByteBattleTraits for ByteBattle {
         verify_and_consume_nonce(&e, &player2_sig, &p2_nonce);
 
         let token = token::Client::new(&e, &get_token(&e));
-        token.xfer_from(
-            &Signature::Invoker,
-            &BigInt::zero(&e),
-            &signer1_id,
-            &Identifier::Contract(e.current_contract()),
-            &amount,
-        );
-        token.xfer_from(
-            &Signature::Invoker,
-            &BigInt::zero(&e),
-            &signer2_id,
-            &Identifier::Contract(e.current_contract()),
-            &amount,
-        );
 
         let mut player1_byte_to_compare = (e.ledger().timestamp() % 32) as u32;
         let mut player2_byte_to_compare = (e.ledger().timestamp() % 32) as u32;
@@ -103,18 +95,20 @@ impl ByteBattleTraits for ByteBattle {
         if player1_key.get(player1_byte_to_compare).unwrap()
             > player2_key.get(player2_byte_to_compare).unwrap()
         {
-            token.xfer(
-                &Signature::Invoker,
-                &BigInt::zero(&e),
-                &signer1_id,
-                &(amount * 2),
-            );
-        } else {
-            token.xfer(
+            token.xfer_from(
                 &Signature::Invoker,
                 &BigInt::zero(&e),
                 &signer2_id,
-                &(amount * 2),
+                &signer1_id,
+                &amount,
+            );
+        } else {
+            token.xfer_from(
+                &Signature::Invoker,
+                &BigInt::zero(&e),
+                &signer1_id,
+                &signer2_id,
+                &amount,
             );
         }
         return (
@@ -128,6 +122,7 @@ impl ByteBattleTraits for ByteBattle {
     fn nonce(e: Env, user: Identifier) -> i64 {
         get_nonce(&e, &user)
     }
+
     fn token(e: Env) -> BytesN<32> {
         get_token(&e)
     }
@@ -136,4 +131,3 @@ impl ByteBattleTraits for ByteBattle {
 pub fn get_token(e: &Env) -> BytesN<32> {
     e.data().get(DataKey::Token).unwrap().unwrap()
 }
-// fn add_win(user: Identifier) {}

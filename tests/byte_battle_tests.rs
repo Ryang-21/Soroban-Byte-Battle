@@ -41,6 +41,7 @@ fn test_battle() {
         network_passphrase: Default::default(),
         base_reserve: 10,
     });
+
     //Initialize token contract and bytebattle contract
     let token_admin = e.accounts().generate_and_create();
     let token_contract_address = generate_contract_id(&e);
@@ -51,12 +52,11 @@ fn test_battle() {
     let battle_bytes_client = create_byte_battle_contract(&e, &battle_bytes_contract_address);
     battle_bytes_client.initialize(&token_contract_address);
 
+    //Mint tokens to each player and approve for transfer
     let (player1_id, player1_sig) = ed25519::generate(&e);
     let (player2_id, player2_sig) = ed25519::generate(&e);
-
     let bet_amount = BigInt::from_u32(&e, 100);
 
-    //Mint tokens to each player and approve for transfer
     token.with_source_account(&token_admin).mint(
         &Signature::Invoker,
         &BigInt::zero(&e),
@@ -69,6 +69,7 @@ fn test_battle() {
         &player2_id,
         &bet_amount,
     );
+
     let player1_token_nonce = token.nonce(&player1_id);
     let approval_sig = ed25519::sign(
         &e,
@@ -88,6 +89,7 @@ fn test_battle() {
         &battle_bytes_id,
         &bet_amount,
     );
+
     let player2_token_nonce = token.nonce(&player2_id);
     let approval_sig = ed25519::sign(
         &e,
@@ -128,10 +130,6 @@ fn test_battle() {
     let (player1_key, player2_key, player1_byte_to_compare, player2_byte_to_compare) =
         battle_bytes_client.battle(&player1_battle_sig, &player2_battle_sig, &bet_amount);
 
-    print!(
-        "Player 1: {:?}\nPlayer 2: {:?}\nPlayer 1 Byte Compared: {}\nPlayer 2 Byte Compared: {}",
-        player1_key, player2_key, player1_byte_to_compare, player2_byte_to_compare
-    );
     //The byte compared does not matter as both players are ed25519 identifiers
     assert_eq!(
         player1_byte_to_compare,
@@ -165,12 +163,11 @@ fn test_battle_different_bet_amount_expect_panic() {
     let battle_bytes_client = create_byte_battle_contract(&e, &battle_bytes_contract_address);
     battle_bytes_client.initialize(&token_contract_address);
 
+    //Mint tokens to each player and approve for transfer
     let (player1_id, player1_sig) = ed25519::generate(&e);
     let (player2_id, player2_sig) = ed25519::generate(&e);
-
     let bet_amount = BigInt::from_u32(&e, 100);
 
-    //Mint tokens to each player and approve for transfer
     token.with_source_account(&token_admin).mint(
         &Signature::Invoker,
         &BigInt::zero(&e),
@@ -202,6 +199,7 @@ fn test_battle_different_bet_amount_expect_panic() {
         &battle_bytes_id,
         &bet_amount,
     );
+
     let player2_token_nonce = token.nonce(&player2_id);
     let approval_sig = ed25519::sign(
         &e,
@@ -266,12 +264,11 @@ fn test_battle_different_user_expect_panic() {
     let battle_bytes_client = create_byte_battle_contract(&e, &battle_bytes_contract_address);
     battle_bytes_client.initialize(&token_contract_address);
 
+    //Mint tokens to each player and approve for transfer
     let (player1_id, player1_sig) = ed25519::generate(&e);
     let (player2_id, player2_sig) = ed25519::generate(&e);
-
     let bet_amount = BigInt::from_u32(&e, 100);
 
-    //Mint tokens to each player and approve for transfer
     token.with_source_account(&token_admin).mint(
         &Signature::Invoker,
         &BigInt::zero(&e),
@@ -303,6 +300,7 @@ fn test_battle_different_user_expect_panic() {
         &battle_bytes_id,
         &bet_amount,
     );
+
     let player2_token_nonce = token.nonce(&player2_id);
     let approval_sig = ed25519::sign(
         &e,
@@ -325,7 +323,7 @@ fn test_battle_different_user_expect_panic() {
 
     //Generate signatures for each player
     let player1_nonce = battle_bytes_client.nonce(&player1_id);
-    //Player 1 agreed to battle player 3;
+    //Player 1 agrees to battle player 3;
     let (player3_id, _) = ed25519::generate(&e);
     let player1_battle_sig = ed25519::sign(
         &e,
@@ -367,12 +365,11 @@ fn test_battle_reuse_sigs_expect_panic() {
     let battle_bytes_client = create_byte_battle_contract(&e, &battle_bytes_contract_address);
     battle_bytes_client.initialize(&token_contract_address);
 
+    //Mint tokens to each player and approve for transfer
     let (player1_id, player1_sig) = ed25519::generate(&e);
     let (player2_id, player2_sig) = ed25519::generate(&e);
-
     let bet_amount = BigInt::from_u32(&e, 100);
 
-    //Mint tokens to each player and approve for transfer
     token.with_source_account(&token_admin).mint(
         &Signature::Invoker,
         &BigInt::zero(&e),
@@ -404,6 +401,7 @@ fn test_battle_reuse_sigs_expect_panic() {
         &battle_bytes_id,
         &bet_amount,
     );
+
     let player2_token_nonce = token.nonce(&player2_id);
     let approval_sig = ed25519::sign(
         &e,
@@ -445,11 +443,4 @@ fn test_battle_reuse_sigs_expect_panic() {
 
     battle_bytes_client.battle(&player1_battle_sig, &player2_battle_sig, &bet_amount);
     battle_bytes_client.battle(&player1_battle_sig, &player2_battle_sig, &bet_amount);
-}
-
-#[test]
-fn test() {
-    let e = Env::default();
-    let account = e.accounts().generate_and_create();
-    println!("{:?}", account.serialize(&e));
 }
